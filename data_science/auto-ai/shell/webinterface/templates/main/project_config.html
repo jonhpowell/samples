@@ -1,0 +1,193 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+Training Config       
+{% endblock %}
+
+
+{% block content %}
+<script id="selectTmpl" type="text/x-jsrender"><div class="col-sm-4">
+       {% raw %}
+       <input class="df_select" type="checkbox" name="{{:field_name}}" value="{{:field_value}}" var_name="{{:var_name}}"><br>
+       {% endraw %}
+</script>
+
+<div class="body-content">
+    <div class="row">
+        <h2>Data Exploration  &nbsp <a id='' href="#"><i class="fa fa-plus"></i></a></h2>
+    </div>
+    
+    <div class="row">
+       <h5>Training Configuration</h5>
+       
+       <div class="btn-group">
+		  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+		    Training Type <span class="caret"></span>
+		  </button>
+		  <ul class="dropdown-menu" role="menu">
+		    <li><a href="#">Classification</a></li>
+		    <li><a href="#">Regression</a></li>
+		  </ul>
+	   </div>
+    
+       <!--  <div class="btn-group">
+		  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+            Loss function <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu">
+            <li><a href="#">Action</a></li>
+            <li><a href="#">Another action</a></li>
+            <li><a href="#">Something else here</a></li>
+            <li class="divider"></li>
+            <li><a href="#">Separated link</a></li>
+          </ul>
+       </div> -->
+          
+       <div class="btn-group">
+          <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+            Model Selection Metric <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu">
+            <li><a href="#">AUC</a></li>
+            <li><a href="#">Accuracy</a></li>
+          </ul>
+	   </div>
+    
+
+    <div class="row">
+    
+	    <table id="grid-data" class="table table-condensed table-hover table-striped">
+		    <thead>
+		        <tr>
+		            <th data-column-id="target_selected" data-formatter="html_widget">Target</th>
+                    <th data-column-id="index_selected" data-formatter="html_widget">Index</th>
+                    <th data-column-id="weight_selected" data-formatter="html_widget">Weight</th>
+		            
+		            <th data-column-id="var_name">Name</th>
+		            <th data-column-id="var_type">Type</th>
+		            <th data-column-id="missing"  data-type="numeric">Missing</th>
+		            <th data-column-id="unique"  data-type="numeric">Unique</th>
+		            <th data-column-id="mean_mode"  data-type="numeric">Mean/Mode</th>
+		            <th data-column-id="min"  data-type="numeric">Min</th>
+		            <th data-column-id="max"  data-type="numeric">Max</th>
+		        </tr>
+		    </thead>
+		    <tbody>
+		        {% for summary_key in data_explorer.summary %}
+		        {% set summary_key_s_value = data_explorer.summary[summary_key] %}
+		        <tr>
+		            <td><input type="checkbox" name="target" value="target"><br></td>
+		            <td><input type="checkbox" name="index" value="index"><br></td>
+		            <td><input type="checkbox" name="weight" value="weight"><br></td>
+		            <td>{{ summary_key }}</td>
+		            <td>{{ summary_key_s_value.type }}</td>
+		            <td>{{ summary_key_s_value.missing }}</td>
+		            <td>{{ summary_key_s_value.unique }}</td>
+		            <td>{{ summary_key_s_value.mean }}</td>
+		            <td>{{ summary_key_s_value.min }}</td>
+		            <td>{{ summary_key_s_value.max }}</td>
+		        </tr>
+		        {% endfor %}
+	        </tbody>
+	    </table>
+	    
+	    <div class="btn-group">
+	       <button type="button" class="btn btn-primary" id="start_traiinng">
+            Start Training
+           </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script>
+$(function() {
+	var model_config_dict = {};
+	
+	$("#grid-data").bootgrid({
+		rowCount: 15,
+		formatters: {
+	        html_widget: function (column, row){
+	        	    var column_id_split = column.id.split('_')
+	        	    var tmpl = $.templates("#selectTmpl"); // Get compiled template
+                 var data = {
+            		   field_name: column_id_split[0],
+            		   field_value: column_id_split[0],
+            		   var_name: row.var_name
+                 };
+                 var html = tmpl.render(data);
+	            /* "this" is mapped to the grid instance */
+	            
+	            return html;
+	        }
+	    }
+	}).on("loaded.rs.jquery.bootgrid", function (e){
+		$("input.df_select").click(function(){
+			var that = this;
+			
+	        if( $(this).is(':checked') ) {
+	            var param_name = $(this).attr("name");
+	            var var_name = $(this).attr("var_name");
+	            
+	            if($("input.df_select[name!='" + param_name + "'][var_name='" + var_name + "']").is(':checked')){
+	            	  BootstrapDialog.show({
+	            		  title: 'Invalid Model Configuration',
+	            		  message: "You can't config target/index/weight like this..."
+	            	  });
+	            	  $(this).prop('checked', false);
+	            	  return
+	            } else {     
+		            $("input.df_select[name='" + param_name + "']").prop('checked', false);
+		            $(this).prop('checked', true);
+		            model_config_dict[param_name+'_row'] = var_name;
+	            }
+
+	        };
+	    })
+    });
+	
+	$(".dropdown-menu li a").click(function(){
+		  var selText = $(this).text();
+		  var parent_button = $(this).parents('.btn-group').find('button[data-toggle="dropdown"]');
+		  param_name = (parent_button.text().toLowerCase().trim().split(" ").join("_"));
+		  model_config_dict[param_name] = selText.toLowerCase();
+		  $(this).parents('.btn-group').find('button[data-toggle="dropdown"]').html(selText+' <span class="caret"></span>');
+	});
+
+	$("#start_traiinng").click(function(){
+		
+		console.log(model_config_dict);
+		var required_config_options = [
+		  "target_row", "index_row", "weight_row", 
+		  "training_type", "model_selection_metric"	  
+		], missing_options = [];
+		
+		$.each(required_config_options, function(index, val){
+			if(!(val in model_config_dict)){
+			    missing_options.push(val);
+			}
+		})
+
+		if(missing_options.length > 0){
+			BootstrapDialog.show({
+                title: 'Invalid Model Configuration',
+                message: "Missing (required) config option: <b>" + missing_options.join(',') + "</b>"
+            });
+		} else {
+	        $.ajax({
+	        	   method: 'post',
+	        	   url: "{{ url_for('main.start_training', project_id=current_project.id) }}",
+	        	   data: model_config_dict
+	        }).done(function(){
+	            location.replace("{{ url_for('main.training_summary')}}" + "{{ current_project.id }}");
+	        })
+		}
+
+	});
+	
+	
+});
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ template "fullname" . }}
+  labels:
+    context: {{ .Values.global.context }}
+    component: data-history-viewer
+    app: {{ template "fullname" . }}
+    chart: {{ template "chart_fullname" . }}
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+  annotations:
+
+    # Gateway registration
+    trebuchet.io/ingress.oauth2-external.oauth2_host: "{{ .Values.gwIngress.authServiceUrl }}"
+    trebuchet.io/ingress.request-size-limiting.allowed_payload_size: "15" #In MB
+#    trebuchet.io/ingress.bot-detection: ""
+    trebuchet.io/ingress.correlation-id.header_name: "X-Trebuchet-Request-Id"
+    trebuchet.io/ingress.correlation-id.generator: "uuid#counter"
+    trebuchet.io/ingress.correlation-id.echo_downstream: "true"
+    trebuchet.io/ingress.tcp-log.host: "{{ .Values.name }}-logcatcher.security.svc.cluster.local"
+    trebuchet.io/ingress.tcp-log.port: "8111"
+    trebuchet.io/ingress.tcp-log.timeout: "3000"
+    trebuchet.io/ingress.tcp-log.keepalive: "6000"
+    trebuchet.io/ingress.statsd.host: "{{ .Values.statsd.host }}"
+    trebuchet.io/ingress.statsd.port: "{{ .Values.statsd.port }}"
+    trebuchet.io/ingress.statsd.timeout: "{{ .Values.statsd.timeout }}"
+
+    # Policy registration
+    # This policy is asigning any subject with a valid token to access all routes of the servicePath
+    # Update as necessary for fine grained policies.
+    trebuchet.io/policy.{{ .Values.gwIngress.servicePath }}-policy-1.subjects: "<.*>"
+    trebuchet.io/policy.{{ .Values.gwIngress.servicePath }}-policy-1.resources: "drn:{{ .Values.gwIngress.tenantId }}::{{ .Values.gwIngress.servicePath }}:<.*>"
+    trebuchet.io/policy.{{ .Values.gwIngress.servicePath }}-policy-1.actions: "get,post,put,patch,delete,head"
+    trebuchet.io/policy.{{ .Values.gwIngress.servicePath }}-policy-1.effect: "allow"
+
+spec:
+  rules:
+  - host: {{ .Values.gwIngress.host }}
+    http:
+      paths:
+      - path: /{{ .Values.gwIngress.servicePath }}
+        backend:
+          serviceName: {{ .Values.name }}
+          servicePort: 80
+

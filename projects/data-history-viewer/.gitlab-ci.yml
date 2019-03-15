@@ -1,0 +1,164 @@
+image: docker.trebuchetdev.com/docker-compose:1.13.0
+stages:
+  - unitTest
+  - pre-flight
+  - build
+  - package
+  - security-test
+  - publish
+  - deploy
+
+cache:
+  key: "$CI_COMMIT_SHA"
+  untracked: true
+  paths:
+    - artifacts
+
+.dockerPull: &dockerPull
+  dependencies:
+    - buildImage
+  before_script:
+    - docker pull $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_SHA
+  after_script:
+    - docker images -aq $REPOSITORY_NAME/$IMAGE_NAME | xargs docker rmi --force
+
+variables:
+  REPOSITORY_NAME: docker.trebuchetdev.com
+  IMAGE_NAME: data-history-viewer
+  IMAGE_VER: 0.2.0
+  CHART_NAME: data-history-viewer
+  CHART_NAMESPACE: pdss
+  PIP: https://$NEXUS_USER:$NEXUS_PWD@repo.trebuchetdev.com/repository/pypi-hosted
+
+  DEV_CLUSTER_ID: drn:1::clusters:THHU2HeEvjAMHHxH
+  INTEGRATION_CLUSTER_ID: drn:1::clusters:r4kmlD5kzlnTZL19
+  STAGING_CLUSTER_ID: drn:1::clusters:1TA4cRYTbNTi7Txc
+
+unitTest:
+  stage: unitTest
+  script:
+    - pip install -r requirements.txt
+    - python setup.py test
+
+swaggerValidation:
+  stage: pre-flight
+  image: docker.trebuchetdev.com/koala:latest
+  script:
+    - /opt/koala/bin/koala --only-validate --swagger-docs app/swagger/swagger.yaml --without-feedback
+
+# DOCKER BUILD
+buildImage:
+  image: docker:latest
+  stage: build
+  after_script:
+    - docker images -aq $REPOSITORY_NAME/$IMAGE_NAME | xargs docker rmi --force
+  script:
+    - docker build --build-arg INDEX_URL=$PIP/simple --tag $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_SHA .
+    - docker push $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_SHA
+
+vulnerabilityScan:
+  image: $REPOSITORY_NAME/vms:latest
+  allow_failure: true
+  stage: security-test
+  script:
+    - /vms cicd --image $REPOSITORY_NAME/$IMAGE_NAME --docker-user $NEXUS_USER --docker-pass $NEXUS_PWD --registry=$REPOSITORY_NAME --image-drn $CI_COMMIT_SHA --registry-drn drn:1::docker:registry/$REPOSITORY_NAME
+
+## Test (everything but master)
+publishImageTest:
+  <<: *dockerPull
+  stage: publish
+  script:
+    - docker tag $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_SHA $REPOSITORY_NAME/$IMAGE_NAME:test
+    - docker push $REPOSITORY_NAME/$IMAGE_NAME:test
+  except:
+    - tags
+
+## Latest (only master)
+publishImageLatest:
+  <<: *dockerPull
+  image: docker:latest
+  stage: publish
+  script:
+    - docker tag $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_SHA $REPOSITORY_NAME/$IMAGE_NAME:latest
+    - docker tag $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_SHA $REPOSITORY_NAME/$IMAGE_NAME:$IMAGE_VER
+    - docker push $REPOSITORY_NAME/$IMAGE_NAME:latest
+    - docker push $REPOSITORY_NAME/$IMAGE_NAME:$IMAGE_VER
+  only:
+    - master@analytics/data-history-viewer
+
+## Explicit Versions (tags)
+publishImageVersion:
+  <<: *dockerPull
+  image: docker:latest
+  stage: publish
+  script:
+    - docker tag $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_SHA $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_REF_NAME
+    - docker push $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_REF_NAME
+  only:
+    - tags@analytics/data-history-viewer
+
+## Stable (manual)
+publishImageStable:
+  <<: *dockerPull
+  stage: publish
+  when: manual
+  script:
+    - docker tag $REPOSITORY_NAME/$IMAGE_NAME:$CI_COMMIT_SHA $REPOSITORY_NAME/$IMAGE_NAME:stable
+    - docker push $REPOSITORY_NAME/$IMAGE_NAME:stable
+  only:
+    - tags@analytics/data-history-viewer
+
+# CHART PACKAGE
+packageChart:
+  image: $REPOSITORY_NAME/helm:stable
+  stage: package
+  script:
+    - package
+  artifacts:
+    expire_in: 1 hr
+    paths:
+      - artifacts/$CHART_NAME-*.tgz
+
+# CHART PUBLISH
+publishChart:
+  image: $REPOSITORY_NAME/helm:stable
+  stage: publish
+  tags:
+    - helm-chart-publisher
+  script:
+    - publish
+  only:
+    - master@analytics/data-history-viewer
+    - tags@analytics/data-history-viewer
+
+# CHART DEPLOY
+## Development
+deployDev:
+  image: $REPOSITORY_NAME/deployment:stable
+  stage: deploy
+  environment:
+    name: dev
+  variables:
+    CLUSTER_ID: ${DEV_CLUSTER_ID}
+  script:
+    - deploy-chart
+  only:
+    - master@analytics/data-history-viewer
+    - tags@analytics/data-history-viewer
+
+## Staging
+
+deployStaging:
+  image: $REPOSITORY_NAME/deployment:stable
+  stage: deploy
+  when: manual
+  environment:
+    name: staging
+  variables:
+    CLUSTER_ID: ${STAGING_CLUSTER_ID}
+  script:
+    - deploy-chart
+  only:
+    - master@analytics/data-history-viewer
+    - tags@analytics/data-history-viewer
+
