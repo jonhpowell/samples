@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+Uplodate Data         
+{% endblock %}
+
+{% block css %}
+<style>
+body {
+    background-color: rgb(249, 249, 249);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="body-content">
+    <div class="row">
+        <h2>Testing</h2>
+    </div>
+    
+    <div class="row">
+        <h5>Progress</h5>
+        <div class="jumbotron" id="progress"></div>
+        
+	</div>
+	
+	<div class="row">
+        <div id="result"></div>
+    </div>
+	
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script>
+var progress = new Mprogress({
+	template: 2,
+	parent: '#progress' 
+});
+
+progress.start();
+
+setTimeout(function(){
+	progress.end();
+	$("div#result").html(
+		"<b>Scoring Complete.</b> Click <a>here</a> to download result"
+	);
+}, 3500);
+
+</script>
+{% endblock %}

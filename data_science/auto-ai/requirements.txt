@@ -1,0 +1,13 @@
+# placeholder for now: insert dependencies here
+
+# Frontend packages
+flask
+flask-script
+flask-assets
+webassets
+
+# data sicence packages
+pandas
+catboost
+XGBoost
+category_encoders

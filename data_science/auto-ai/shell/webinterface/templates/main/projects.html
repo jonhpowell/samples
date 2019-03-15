@@ -1,0 +1,106 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+Projects         
+{% endblock %}
+
+{% block css %}
+<style>
+.project-card {
+  background-color: #eee;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="body-content">
+    <script id="projTmpl" type="text/x-jsrender"><div class="col-sm-4">
+       {% raw %}
+       <div class="project-card" style="height:200px; width:70%; margin-top: 100px" project_id='{{:id}}'>
+             <h4>{{:name}}</h4>
+       {% endraw %}
+             <p>{{ x | default(0) }} models deployed</p>
+             <img  class="project-card" src="{{ url_for('static', filename='images/MyPlot.png') }}" height="100%" width="100%" ></img>
+          </div>
+       </div>
+    </script>
+
+    <div class="row">
+        <h2>Projects  &nbsp <a id='add-project' href="#"><i class="fa fa-plus"></i></a></h2>
+    </div>
+    <div class="row" id='project-row'>
+       {% for project in projects %}
+       <div class="col-sm-4">
+          <div class="project-card" style="height:200px; width:70%; margin-top: 100px" project_id='{{ project.id }}'>
+             <h4>{{ project.name }}</h4>
+             <p>{{ x | default(0) }} models deployed</p>
+             <img  class="project-card" src="{{ url_for('static', filename='images/MyPlot.png') }}" height="100%" width="100%" ></img>
+          </div>
+       </div>
+       {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+$(function() {
+	window.max_project_id = parseInt("{{ projects | length }}");
+    $("a#add-project").click(function(){
+	    	BootstrapDialog.show({
+	    		    title: 'Project Info',
+	    		    message: 'Project Name: <input type="text" id="project-name" class="form-control">',
+	            buttons: [{
+	                label: 'Add Project',
+	                // no title as it is optional
+	                cssClass: 'btn-primary',
+	                data: {
+	                    
+	                },
+	                action: function(dialogItself){
+	                	   var tmpl = $.templates("#projTmpl"); // Get compiled template
+	                    var data = {
+	                    		name: $("input#project-name").val(),
+	                    		id: window.max_project_id
+	                		};           
+	                    // render the new project's frontend template
+	                    var html = tmpl.render(data);      // Render template using data - as HTML string
+	                    // add project to the backend
+	                    $.ajax({
+                            method: 'post',
+                            url: "{{ url_for('main.add_project') }}",
+                            data: data
+                        }).done(function(){
+                            console.log('Project added...')
+                            // add the new card frontend html for the project
+                            $('div#project-row').append($(html));
+                            $('div.project-card').click(function(){
+                               // console.log(this.attr('project_id'));
+                               location.replace("{{ url_for('main.upload_data')}}" + $(this).attr('project_id'));
+                            })
+                            window.max_project_id += 1;
+
+                            dialogItself.close();
+                        	 
+                        }).fail(function(){
+                        	   alert( "Fail to add project" );
+                        	
+                        });
+	                }
+	            }, {
+	                label: 'Close',
+	                action: function(dialogItself){
+	                    dialogItself.close();
+	                }
+	            }]
+	        });
+    	
+    })
+    
+    $("div.project-card").click(function(){
+    	   // console.log(this.attr('project_id'));
+    	   location.replace("{{ url_for('main.upload_data')}}" + $(this).attr('project_id'));
+    })
+});
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+apiVersion: v1
+description: A microservice to enable data history querying, initially LME
+name: data-history-viewer
+version: 0.1.0
+sources:
+  - https://hub.docker.com/_/alpine/
+maintainers:
+  - name: Jon Powell
+    email: jon.powell@rackspace.com
+    slack: platform-internal
+

@@ -1,0 +1,39 @@
+# Declare variables to be passed into your templates.
+#
+global:
+  imageRegistry: "docker.trebuchetdev.com"
+  context: history
+  iam_role: data_history_viewer_role
+  role_arn: arn:aws:iam::293135079892:role/data_history_viewer_role
+
+name: data-history-viewer
+image:
+  name: data-history-viewer
+  tag: latest
+  pullPolicy: Always
+resources:
+  cpu:
+    limit: "100m"
+    request: "100m"
+  memory:
+    limit: "150Mi"
+    request: "150Mi"
+
+network:
+  port: 80
+
+replicas: 2
+
+gwIngress:
+  authServiceUrl: https://iam.dev.datapipe.io
+  #This is usually kong gateway url.
+  host: api-control1.dev.datapipe.io
+  # servicePath below represents the path in the gateway for the service.
+  servicePath: data-history-viewer
+
+statsd:
+  host: pdss-telemetry-udp.pdss.svc.cluster.local
+  port: 8129
+  delay: 5
+  timeout: 3000
+

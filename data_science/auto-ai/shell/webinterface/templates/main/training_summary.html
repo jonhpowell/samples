@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+Training Summary
+{% endblock %}
+
+
+{% block content %}
+<div class="body-content">
+    <div class="row">
+        <h2>Training Summary </h2>
+        Progress:
+        <div class="progress">
+            {% set proc_progress = 0 %}
+            {% set proc_progress_str = "0%" %}
+            {% if current_job_runner_progress.submitted >= 0 %}
+                {% set proc_progress = (current_job_runner_progress.completed / current_job_runner_progress.submitted) * 100 %}
+                {% set proc_progress_str = ('%0.1f' % proc_progress)|float|string + "%" %}
+                {% set sub_str = current_job_runner_progress.submitted|int|string %}
+                {% set cmp_str = current_job_runner_progress.completed|int|string %}
+                {% set all_progress_str = ('%s (%s/%s)' % (proc_progress_str, sub_str, cmp_str)) %}
+            {% endif %}
+		    <div class="progress-bar" id="progress" style="width: {{ proc_progress_str }}%;">
+		        {{ all_progress_str }}
+		    </div>
+		</div>
+    </div>
+    
+    
+    <div id="accordion" class="panel-group">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h5 class="panel-title">
+               <span><a href="#collapseHeader">Model</a>
+               <a href="#" style='float:right'>Validation Metrics</a>
+               </span>
+            </h5>
+        </div>
+    </div>
+    {% for results in current_job_runner_results %}
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h4 class="panel-title">
+                <span><a data-toggle="collapse" data-parent="#accordion" href="#{{ results.label }}">{{ results.label }}</a>
+                <a href="#" style='float:right;pointer-events: none;cursor: default;color: inherit;'>{{ results.results }}</a>
+                </span>
+            </h4>
+        </div>
+        <div id="{{ model_name }}" class="panel-collapse collapse">
+            <div class="panel-body">
+                <p>Model Graph here</p>
+                <div class="btn-group">
+                    <a class="btn btn-primary" href="{{ url_for('main.predict', project_id=current_project.id) }}">Predict</a>
+                    <a class="btn btn-default">Deploy</a>
+                </div>
+            </div>
+        </div>
+    </div>   
+    {% endfor %}
+</div>
+
+
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script>
+$(function() {
+	setInterval(function(){ 
+		$.ajax({
+	         method: 'get',
+	         url: "{{ url_for('main.training_job_update')}}",
+	     }).success(function(response){
+	         if(response.status == "success"){
+	        	    var progress_percent = (
+	        	    		response.training_job_status.completed * 100 / response.training_job_status.submitted).toFixed(1);
+	        	    $("div#progress").width(progress_percent + "%");
+	        	    $("div#progress").text(progress_percent + "%");
+	        	    console.log(response.training_job_results)
+	        	    for (result in response.training_job_results) {
+	        	        $("span#panel-title").text(result.label);
+	        	        $("span#panel-title").text(result.results);
+	        	    }
+	         }
+	     })
+		}, 5000);
+});
+</script>
+{% endblock %}
+

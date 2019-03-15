@@ -1,0 +1,34 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+Home         
+{% endblock %}
+
+{% block content %}
+<!-- Main jumbotron for a primary marketing message or call to action -->
+<div class="jumbotron">
+  <h1>Welcome to {{ project_name }}</h1>
+  <p>This is {{ project_name }} flask project. It builds on top of Flask, Bootstrap 3, and some other tools.</p>
+  <p><a href="https://github.com/tonytan4ever/Flask-outliner" class="btn btn-primary btn-large">Learn more &raquo;</a></p>
+</div><!-- /.jumbotron -->
+
+<div class="body-content">
+  <div class="row">
+    <div class="col-lg-4">
+      <h2>Bootstrap 3</h2>
+      <p>Sleek, intuitive, and powerful mobile-first front-end framework for faster and easier web development.</p>
+      <p><a class="btn btn-default" href="https://getbootstrap.com/docs/3.4/">Official website &raquo;</a></p>
+    </div>
+    <div class="col-lg-4">
+      <h2><i class="fa fa-flask"></i> Flask</h2>
+      <p>Flask is the Python SQL toolkit and Object Relational Mapper that gives application developers the full power and flexibility of SQL.</p>
+      <p><a href="http://flask.pocoo.org/" class="btn btn-default" href="#">Official website &raquo;</a></p>
+   </div>
+    <div class="col-lg-4">
+      <h2><i class="fa fa-edit"></i> Data Science tools</h2>
+      <p>These are existing DS tools (Pandas, Catboost, XGBoost), There is some other data science tools we are are going to use</p>
+      <p><a href="http://www.google.com/" class="btn btn-default" href="#">Official website &raquo;</a></p>
+    </div>
+  </div><!-- /.row -->
+</div>
+{% endblock %}

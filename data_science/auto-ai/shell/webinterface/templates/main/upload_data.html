@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+Uplodate Data         
+{% endblock %}
+
+{% block css %}
+<style>
+.btn-file {
+  position: relative;
+  overflow: hidden;
+}
+.btn-file input[type=file] {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 100%;
+  min-height: 100%;
+  font-size: 999px;
+  text-align: right;
+  filter: alpha(opacity=0);
+  opacity: 0;
+  background: red;
+  cursor: inherit;
+  display: block;
+}
+input[readonly] {
+  background-color: white !important;
+  cursor: text !important;
+}
+.bottom {
+    padding-top: 10px
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="body-content">
+    <div class="row">
+        <h2>Upload Data  &nbsp <a id='' href="#"><i class="fa fa-plus"></i></a></h2>
+    </div>
+    
+    <div class="row">
+        <form id="data-upload" method='post' action="{{ url_for('main.project_config', project_id=current_project.id) }}" enctype="multipart/form-data">
+	    <div class="input-group">
+		  <span class="input-group-btn">
+		    <span class="btn btn-default btn-file">
+		      Browse... 
+		      <input data-url="/upload" name="data_file" accept=".csv"  type="file" id="data_file">
+		    </span>
+		  </span>
+		  <input readonly="readonly" placeholder="Data File" class="form-control" name="filename" type="text">
+		</div>
+		</form>
+	</div>
+	<div class="row bottom">
+	     <h5>Or import from:</h5>
+	     <div class="btn-group">
+		  <button type="button" class="btn btn-primary">ODBC</button>
+		  <button type="button" class="btn btn-primary">HDFS</button>
+		  <button type="button" class="btn btn-primary">Other</button>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+
+{% block js %}
+<script>
+$(function() {
+	$('input#data_file').change(function(){
+		   console.log("file selected");
+		   $('form#data-upload').submit();
+	})
+});
+</script>
+{% endblock %}

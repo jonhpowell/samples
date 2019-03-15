@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name | quote }}
+  labels:
+    component: {{ .Values.name | quote }}
+    context: {{ .Values.global.context | quote }}
+    chart: {{ .Chart.Name | quote }}
+    version: {{ .Chart.Version | replace "+" "_" | trunc 63 | quote }}
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+spec:
+  ports:
+    - port: {{ .Values.network.port }}
+      name: "http"
+      targetPort: 8080
+  selector:
+    component: {{ .Values.name | quote }}
+    context: {{ .Values.global.context | quote }}
+    release: {{ .Release.Name | quote }}
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name | quote }}
+  labels:
+    context: {{ .Values.global.context | quote }}
+    chart: {{ .Chart.Name | quote }}
+    version: {{ .Chart.Version | replace "+" "_" | trunc 63 | quote }}
+    component: {{ .Values.name | quote }}
+    release: {{ .Release.Name | quote }}
+    heritage: {{ .Release.Service | quote }}
+spec:
+  replicas: {{ .Values.replicas }}
+  template:
+    metadata:
+      name: {{ .Release.Name | quote }}
+      labels:
+        context: {{ .Values.global.context | quote }}
+        component: {{ .Values.name | quote }}
+        release: {{ .Release.Name | quote }}
+      annotations:
+        iam.amazonaws.com/role: {{ .Values.global.iam_role | quote }}
+        iam.amazonaws.com/allowed-roles: |
+          [ {{ .Values.global.role_arn | quote }} ]
+    spec:
+      containers:
+        - image: {{ printf "%s/%s:%s" .Values.global.imageRegistry .Values.image.name .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          name: {{ .Values.name | quote }}
+          resources:
+            limits:
+              cpu: {{ default "50m" .Values.resources.cpu.limit | quote }}
+              memory: {{ default "50Mi" .Values.resources.memory.limit | quote }}
+            requests:
+              cpu: {{ default "50m" .Values.resources.cpu.request | quote }}
+              memory: {{ default "50Mi" .Values.resources.memory.request | quote }}
+          env:
+

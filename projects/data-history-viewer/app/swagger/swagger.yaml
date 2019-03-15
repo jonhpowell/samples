@@ -1,0 +1,241 @@
+--- 
+swagger: "2.0"
+info:
+  description: "Enable LME event history queries"
+  version: "0.0.1"
+  title: "Event History Query Service"
+host: "data-history-dat.dev.datapipe.io"
+basePath: "/v0/data_hist"
+x-trebuchet-config:
+  gateway-basepath: /event-history
+schemes:
+- "https"
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /swagger:
+    get:
+      x-trebuchet-config:
+        service-name: eventHistory
+        resource-name: swagger
+        command-name: get
+      x-swagger-router-controller: "app.controllers.swagger_controller"
+      operationId: "get_swagger"
+      summary: "Returns the swagger specification file"
+      description: "Returns the swagger specification file for this service."
+      tags:
+      - "specification"
+      - "swagger"
+      produces:
+      - "application/x-yaml"
+      responses:
+        200:
+          description: "successful operation"
+          schema:
+            type: string
+  /healthcheck:
+    get:
+      x-trebuchet-config:
+        service-name: eventHistory
+        resource-name: health
+        command-name: get
+      x-swagger-router-controller: "app.controllers.health_controller"
+      operationId: "get_health"
+      summary: "Returns the health of the service"
+      description: "Returns information about the health of the service."
+      tags:
+      - "health"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Returns OK"
+          schema: {$ref: "#/definitions/HealthStatus"}
+  /query:
+    post:
+      x-trebuchet-config:
+        service-name: eventHistory
+        resource-name: eventHistory
+        command-name: query
+      tags:
+      - "query"
+      summary: "Submit the Athena SQL query"
+      description: "Submit the Athena SQL query."
+      x-swagger-router-controller: "app.controllers.query_controller"
+      operationId: "query"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "header"
+        name: "X-TREBUCHET-TENANT-ID"
+        required: false
+        type: "string"
+        description: "tenant id"
+      - in: "body"
+        name: "query-config"
+        description: "query configuration"
+        schema: {$ref: "#/definitions/QueryConfiguration"}
+      responses:
+        200:
+          description: "successful submission"
+          schema: {$ref: "#/definitions/QueryIdDef"}
+        default:
+          description: "Trouble submitting Athena event SQL query"
+          schema: {$ref: "#/definitions/ErrorResponse"}
+  /status/{queryId}:
+    get:
+      x-trebuchet-config:
+        service-name: eventHistory
+        resource-name: eventHistory
+        command-name: getStatus
+      tags:
+      - "status"
+      summary: "get status of submitted Athena SQL query"
+      description: "Poll using this method until status = 'FINISHED'"
+      x-swagger-router-controller: "app.controllers.status_controller"
+      operationId: "get_status"
+      produces:
+      - "application/json"
+      parameters:
+      - in: header
+        name: "X-TREBUCHET-TENANT-ID"
+        required: false
+        type: string
+        description: "tenant id"
+      - in: path
+        name: queryId
+        required: true
+        type: string
+        description: "Returned query id from initial query call"
+      responses:
+        200:
+          description: "successful status retrieval operation"
+          schema: {$ref: "#/definitions/QueryStatus"}
+        default:
+          description: "Trouble getting Athena event SQL query status"
+          schema: {$ref: "#/definitions/ErrorResponse"}
+  /next:
+    post:
+      x-trebuchet-config:
+        service-name: eventHistory
+        resource-name: eventHistory
+        command-name: getNext
+      tags:
+      - "events"
+      produces:
+      - "application/x-json"
+      summary: "Iterator to get v0 event query result set in chunks given an Athena SQL query"
+      description: "Iterator to get Athena query results."
+      x-swagger-router-controller: "app.controllers.events_controller"
+      operationId: "get_next"
+      parameters:
+      - in: "header"
+        name: "X-TREBUCHET-TENANT-ID"
+        required: false
+        type: "string"
+        description: "tenant id"
+      - in: "body"
+        name: "next_request"
+        description: "query results chunk get specifier"
+        schema: {$ref: "#/definitions/QueryNextRequest"}
+      responses:
+        200:
+          description: "OK"
+          schema:
+            $ref: "#/definitions/QueryNextResponse"
+        default:
+          description: "Trouble getting Athena SQL event query data"
+          schema: {$ref: "#/definitions/ErrorResponse"}
+definitions:
+  ErrorResponse:
+    required:
+      - message
+    properties:
+      message:
+        type: string
+  EventVersion0:
+    type: "object"
+    required:
+    - "arrivaltimestamp"
+    - "createdtimestamp"
+    - "customerid"
+    - "data"
+    - "servicename"
+    - "service"
+    properties:
+      arrivaltimestamp:
+        type: number
+        format: int64
+      createdtimestamp:
+        type: number
+        format: int64
+      customerid:
+        type: integer
+        example: 11003
+      data:
+        type: string
+        example: "{\"name\": \"value\"}"
+      servicename:
+        type: string
+        example: "iam-admin"
+      service:
+        type: string
+        example: "iam-admin"
+  StatusColors:
+      type: string
+      enum: &StatusColors
+        - green
+        - yellow
+        - red
+  HealthStatus:
+    type: "object"
+    properties:
+      healthy:
+        type: string
+        description: Health status color code
+        enum: *StatusColors
+      message:
+        type: string
+        description: "Health message"
+  QueryConfiguration:
+    type: object
+    properties:
+      sql_query:
+        type: string
+        description: "Athena SQL using EventVersion0 column names"
+  QueryIdDef:
+    type: string
+    description: "AWS UUID"
+  QueryNextRequest:
+    type: object
+    properties:
+      query_id:
+        type: string
+        description: "Athena SQL job id specific to one query returned on initial query submission"
+      next_token:
+        type: string
+        description: "Token returned on previous call used for demarcating the result set chunk"
+      results_per_request:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 1000
+        description: "how many result set rows per request"
+  QueryNextResponse:
+    type: object
+    properties:
+      result_set:
+        type: string
+        description: "JSON query results (probably 1/N chunks)"
+      next_token:
+        type: string
+        description: "Token that demarcates the new row based on this result set chunk"
+    type: string
+    description: "JSON query results (probably in chunks)"
+  QueryStatus:
+    type: string
+
