@@ -2,7 +2,7 @@
 
 Here are some recent (circa Mar 2019) samples of my work that may give you an idea of the types of 
 projects tackled and how they were approached. Some are simple Proof of Concepts (POC) while others 
-are nearing production-quality.
+are near production-quality.
 
 # Table of Contents (may be incomplete)
 
@@ -16,7 +16,7 @@ are nearing production-quality.
   * Data History Viewer 
   * Kafka Consumer to BigQuery POC
   * Kafka Streams POC
-* Misc Code
+* Misc Code Samples
   * Scala
   * Java
   * Python
@@ -24,4 +24,4 @@ are nearing production-quality.
 
 # Notes
 
-Please do not copy without written permission.
+Please do not copy parts or the whole without written permission.
