@@ -13,6 +13,7 @@ are near production-quality.
   * Kaggle (misc Kaggle work)
   * Smart Monitoring Service (design only)
 * Projects
+  * Coinbase Crypto-Currency Streamer / Aggregator 
   * Data History Viewer 
   * Kafka Consumer to BigQuery POC
   * Kafka Streams POC
