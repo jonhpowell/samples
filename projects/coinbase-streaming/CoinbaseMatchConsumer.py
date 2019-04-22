@@ -56,6 +56,8 @@ async def coinbase_match(matches):
         #print(f'{product_id} dict: ${stats_1_min[product_id].current()}')
 
 
+# use .delta() to get prior results in table
+
 @app.page('/stats1min/{product_id}/')
 @app.table_route(table=stats_1min, match_info='product_id')
 async def get_stats1min(web, request, product_id):
