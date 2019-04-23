@@ -1,4 +1,4 @@
-# Caserta Google Challeng Project
+# Caserta Google Challenge Project
 
 ## Synopsis
 
