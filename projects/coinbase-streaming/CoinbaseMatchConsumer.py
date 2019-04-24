@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import faust
 
+# define consumer app
 app = faust.App(
     'coinbase_matches',
     broker='kafka://localhost:9092',
@@ -8,6 +9,7 @@ app = faust.App(
 )
 
 
+# define incoming & outgoing message structures
 class Match(faust.Record, serializer='json', isodates=True):
     trade_id: int
     product_id: str
@@ -26,13 +28,16 @@ class CandleStats(faust.Record, isodates=True):
     total_amount: float = 0.0
 
 
+# define Kafka incoming topic of interest
 coinbase_match_topic = app.topic('coinbase_matches', value_type=Match)
 
+# define simple match aggregation table, symbol:stats per 1 minute window
 stats_1min = app.Table('stats_1_min', default=CandleStats, value_type=CandleStats)\
     .tumbling(timedelta(minutes=1), expires=timedelta(hours=1))\
     .relative_to_field(Match.time)
 
 
+# incoming topic aggregation logic
 @app.agent(coinbase_match_topic)
 async def coinbase_match(matches):
     async for match in matches.group_by(Match.product_id):
@@ -58,6 +63,7 @@ async def coinbase_match(matches):
         #print(f'{product_id} dict: ${stats_1_min[product_id].current()}')
 
 
+# REST service definition; need to extend to allow arbitrary 1-minute window in the past using delta()
 @app.page('/stats1min/{product_id}/')
 @app.table_route(table=stats_1min, match_info='product_id')
 async def get_stats1min(web, request, product_id):
