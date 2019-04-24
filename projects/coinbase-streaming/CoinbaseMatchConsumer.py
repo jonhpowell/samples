@@ -65,16 +65,3 @@ async def get_stats1min(web, request, product_id):
         product_id: stats_1min[product_id].now(),
     })
 
-
-
-count = [0]
-
-
-@app.page('/count/')
-async def get_count(self, request):
-    # update the counter
-    count[0] += 1
-    # and return it.
-    return self.json({
-        'count': count[0],
-    })
