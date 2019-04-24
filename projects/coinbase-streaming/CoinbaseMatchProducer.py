@@ -16,9 +16,10 @@ def get_all_products():
     return prods
 
 
+# helper function to trim message to only what's needed
 extract = lambda x, y: dict(zip(x, map(y.get, x)))
 
-
+# event handler for new Coinbase match (extract fields & push to Kafka topic)
 class Matches(Client):
     def on_message(self, message):
         if message['type'] == 'match' and 'time' in message:
@@ -26,6 +27,8 @@ class Matches(Client):
             producer.send('coinbase_matches', md)
             print(md)
 
+
+# main flow
 
 products = get_all_products()
 print(f'Getting matches for products {products}')
