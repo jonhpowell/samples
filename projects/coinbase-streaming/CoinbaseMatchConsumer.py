@@ -37,26 +37,26 @@ stats_1min = app.Table('stats_1_min', default=CandleStats, value_type=CandleStat
 async def coinbase_match(matches):
     async for match in matches.group_by(Match.product_id):
         product_id = match.product_id
+        price = float(match.price)
+        size = float(match.size)
         stats = stats_1min[product_id].current()
         if stats.product_id is None:
             stats.product_id = match.product_id
             stats.start_time = match.time
-            stats.first_price = match.price
-            stats.lowest_price = match.price
-            stats.highest_price = match.price
-            stats.total_amount = match.price
+            stats.first_price = price
+            stats.lowest_price = price
+            stats.highest_price = price
+            stats.total_amount = price
         else:
-            stats.lowest_price = match.price if match.price < stats.lowest_price else stats.lowest_price
-            stats.highest_price = match.price if match.price > stats.highest_price else stats.highest_price
-        stats.last_price = match.price
-        stats.total_amount += match.price
+            stats.lowest_price = price if price < stats.lowest_price else stats.lowest_price
+            stats.highest_price = price if price > stats.highest_price else stats.highest_price
+        stats.last_price = price
+        stats.total_amount += price * size
         print(stats)
         stats_1min[product_id] = stats
 
         #print(f'{product_id} dict: ${stats_1_min[product_id].current()}')
 
-
-# use .delta() to get prior results in table
 
 @app.page('/stats1min/{product_id}/')
 @app.table_route(table=stats_1min, match_info='product_id')
