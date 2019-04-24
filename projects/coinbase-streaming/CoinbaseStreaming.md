@@ -38,7 +38,9 @@ Summary: the complete implementation comprises only _two_ very short Python sour
 
 ## To Run It
 
-* Start Zookeeper & Kafka (per below)
+* Start Zookeeper & Kafka (in Kafka_x/bin directory)
+   * ./zookeeper-server-start.sh ../config/zookeeper.properties
+   * ./kafka-server-start.sh ../config/server.properties
 * Start CoinbaseProducer.py (via IDE is nice)
 * Start CoinbaseConsumer.py
     * venv/bin/faust -A CoinbaseMatchConsumer worker -l info
