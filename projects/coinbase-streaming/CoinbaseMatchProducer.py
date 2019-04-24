@@ -23,8 +23,6 @@ class Matches(Client):
     def on_message(self, message):
         if message['type'] == 'match' and 'time' in message:
             md = extract(['trade_id', 'time', 'product_id', 'price', 'size'], message)
-            md['price'] = float(md['price'])
-            md['size'] = float(md['size'])
             producer.send('coinbase_matches', md)
             print(md)
 
