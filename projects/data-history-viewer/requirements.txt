@@ -42,5 +42,5 @@ typing==3.6.1
 urllib3==1.21.1
 virtualenv==15.1.0
 websocket-client==0.44.0
-Werkzeug==0.12.2
+Werkzeug==0.15.3
 
